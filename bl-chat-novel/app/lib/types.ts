@@ -31,8 +31,10 @@ export interface Scene {
 export interface Episode {
   id: string;
   title: string;
+  subtitle?: string;
   scenes: Scene[];
   firstSceneId: string;
+  coverImage?: string;
 }
 
 export interface GameStats {

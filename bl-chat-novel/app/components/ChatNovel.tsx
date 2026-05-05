@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { episode1 } from '../lib/episode1';
-import { loadState, saveState, clearState, INITIAL_STATE } from '../lib/gameState';
-import type { GameState, Scene, Choice, GameStats } from '../lib/types';
-import StatsBar from './StatsBar';
+import { getEpisode } from '../lib/episodes';
+import { INITIAL_STATE, clearState, loadState, saveState } from '../lib/gameState';
+import type { Choice, GameState, GameStats, Scene } from '../lib/types';
 import ChatBubble from './ChatBubble';
+import EpisodeCover from './EpisodeCover';
+import StatsBar from './StatsBar';
 
-function findScene(sceneId: string): Scene | undefined {
-  return episode1.scenes.find((s) => s.id === sceneId);
+function findScene(episodeId: string, sceneId: string): Scene | undefined {
+  return getEpisode(episodeId)?.scenes.find((s) => s.id === sceneId);
 }
 
 export default function ChatNovel() {
@@ -21,8 +22,13 @@ export default function ChatNovel() {
 
   useEffect(() => {
     const saved = loadState();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- saved progress is restored after mount because localStorage is client-only.
     setState(saved);
-    const scene = findScene(saved.currentSceneId);
+
+    const scene =
+      findScene(saved.episodeId, saved.currentSceneId) ??
+      findScene(INITIAL_STATE.episodeId, INITIAL_STATE.currentSceneId);
+
     if (scene) {
       setCurrentScene(scene);
       setMsgIndex(0);
@@ -45,21 +51,19 @@ export default function ChatNovel() {
     }
   }, [currentScene, msgIndex]);
 
-  const goToScene = useCallback(
-    (sceneId: string, newState: GameState) => {
-      const nextScene = findScene(sceneId);
-      if (!nextScene) return;
-      saveState(newState);
-      setState(newState);
-      setCurrentScene(nextScene);
-      setMsgIndex(0);
-    },
-    []
-  );
+  const goToScene = useCallback((sceneId: string, newState: GameState) => {
+    const nextScene = findScene(newState.episodeId, sceneId);
+    if (!nextScene) return;
+    saveState(newState);
+    setState(newState);
+    setCurrentScene(nextScene);
+    setMsgIndex(0);
+  }, []);
 
   const handleChoice = useCallback(
     (choice: Choice) => {
       if (!currentScene) return;
+
       const newStats: GameStats = {
         affection: Math.min(100, state.stats.affection + (choice.effects.affection ?? 0)),
         trust: Math.min(100, state.stats.trust + (choice.effects.trust ?? 0)),
@@ -73,33 +77,33 @@ export default function ChatNovel() {
       };
       goToScene(choice.nextSceneId, newState);
     },
-    [currentScene, state, goToScene]
+    [currentScene, goToScene, state]
   );
 
   const handleContinue = useCallback(() => {
     if (!currentScene?.nextSceneId) return;
     const newState = { ...state, currentSceneId: currentScene.nextSceneId };
     goToScene(currentScene.nextSceneId, newState);
-  }, [currentScene, state, goToScene]);
+  }, [currentScene, goToScene, state]);
 
   const handleRestart = useCallback(() => {
     clearState();
-    const scene = findScene(INITIAL_STATE.currentSceneId);
     setState(INITIAL_STATE);
+    const scene = findScene(INITIAL_STATE.episodeId, INITIAL_STATE.currentSceneId);
     if (scene) {
       setCurrentScene(scene);
       setMsgIndex(0);
     }
   }, []);
 
-  // Mark complete when ending scene is fully shown
   useEffect(() => {
     if (currentScene?.isEnding && allMessagesShown && !state.completed) {
       const completedState = { ...state, completed: true };
       saveState(completedState);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- completion is persisted when the final message becomes visible.
       setState(completedState);
     }
-  }, [currentScene, allMessagesShown, state]);
+  }, [allMessagesShown, currentScene, state]);
 
   if (!ready || !currentScene) {
     return (
@@ -112,15 +116,16 @@ export default function ChatNovel() {
     );
   }
 
+  const episode = getEpisode(state.episodeId);
   const visibleMessages = currentScene.messages.slice(0, msgIndex + 1);
   const isEndingVisible = currentScene.isEnding && allMessagesShown;
+  const shouldShowCover = Boolean(episode?.coverImage && currentScene.id === episode.firstSceneId && msgIndex === 0);
 
   return (
     <div
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: '#0f0f1a', maxWidth: '480px', margin: '0 auto' }}
     >
-      {/* Fixed header */}
       <header
         className="fixed top-0 left-0 right-0 z-20"
         style={{ maxWidth: '480px', margin: '0 auto' }}
@@ -129,6 +134,7 @@ export default function ChatNovel() {
           style={{
             backgroundColor: 'rgba(15,15,26,0.97)',
             borderBottom: '1px solid #1e1e35',
+            backdropFilter: 'blur(8px)',
           }}
         >
           <div className="flex items-center justify-between px-4 py-3">
@@ -140,7 +146,7 @@ export default function ChatNovel() {
               ← 戻る
             </Link>
             <span style={{ color: '#c8c4d8', fontSize: '13px' }}>
-              第1話：はじまりの花
+              {episode?.title ?? '第1話'}
             </span>
             <div style={{ width: '40px' }} />
           </div>
@@ -148,23 +154,33 @@ export default function ChatNovel() {
         </div>
       </header>
 
-      {/* Scrollable chat area */}
       <main
         className="flex flex-col gap-4 px-4"
         style={{ paddingTop: '110px', paddingBottom: '120px' }}
       >
+        {shouldShowCover && episode?.coverImage && (
+          <EpisodeCover
+            src={episode.coverImage}
+            title={episode.title}
+            subtitle={episode.subtitle}
+          />
+        )}
+
         {visibleMessages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
         ))}
 
         {isEndingVisible && (
-          <EpisodeEndCard stats={state.stats} onRestart={handleRestart} />
+          <EpisodeEndCard
+            stats={state.stats}
+            subtitle={episode?.subtitle ?? 'はじまりの花'}
+            onRestart={handleRestart}
+          />
         )}
 
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Fixed bottom action area */}
       {!isEndingVisible && (
         <div
           className="fixed bottom-0 left-0 right-0 z-20"
@@ -175,6 +191,7 @@ export default function ChatNovel() {
             style={{
               backgroundColor: 'rgba(15,15,26,0.97)',
               borderTop: '1px solid #1e1e35',
+              backdropFilter: 'blur(8px)',
             }}
           >
             {allMessagesShown ? (
@@ -234,9 +251,11 @@ export default function ChatNovel() {
 
 function EpisodeEndCard({
   stats,
+  subtitle,
   onRestart,
 }: {
   stats: GameStats;
+  subtitle: string;
   onRestart: () => void;
 }) {
   return (
@@ -254,7 +273,7 @@ function EpisodeEndCard({
         className="text-center mb-6"
         style={{ color: '#d8d4e8', fontSize: '17px', fontWeight: 400 }}
       >
-        はじまりの花
+        {subtitle}
       </h2>
 
       <div className="flex flex-col gap-4 mb-6">

@@ -1,14 +1,47 @@
 import Link from 'next/link';
+import OptionalImage from './components/OptionalImage';
+
+function HeroPlaceholder() {
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center"
+      style={{
+        background: 'linear-gradient(160deg, #0d1030 0%, #1a1060 55%, #0a1828 100%)',
+      }}
+    >
+      <span style={{ color: 'rgba(165,160,220,0.42)', fontSize: '11px', letterSpacing: '0.28em' }}>
+        HERO ILLUSTRATION
+      </span>
+    </div>
+  );
+}
+
+function PortraitPlaceholder({
+  initial,
+  accentColor,
+  glowColor,
+}: {
+  initial: string;
+  accentColor: string;
+  glowColor: string;
+}) {
+  return (
+    <div className="flex h-full w-full items-center justify-center" style={{ background: glowColor }}>
+      <span style={{ color: accentColor, fontSize: '30px', fontWeight: 300, opacity: 0.65 }}>
+        {initial}
+      </span>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center px-5 py-8 relative overflow-hidden"
       style={{
         background: 'linear-gradient(145deg, #0c0e22 0%, #17124a 45%, #0e1c2e 100%)',
       }}
     >
-      {/* Ambient glow — top left */}
       <div
         className="absolute pointer-events-none"
         aria-hidden="true"
@@ -24,8 +57,6 @@ export default function Home() {
           filter: 'blur(40px)',
         }}
       />
-
-      {/* Ambient glow — bottom right */}
       <div
         className="absolute pointer-events-none"
         aria-hidden="true"
@@ -42,10 +73,35 @@ export default function Home() {
         }}
       />
 
-      {/* Main content */}
       <div className="relative z-10 text-center w-full max-w-sm sm:max-w-md md:max-w-lg">
+        <div
+          className="relative mb-7 overflow-hidden rounded-2xl"
+          style={{
+            aspectRatio: '16 / 9',
+            minHeight: '180px',
+            border: '1px solid rgba(109,99,210,0.22)',
+            boxShadow: '0 0 60px rgba(79,70,229,0.18)',
+          }}
+        >
+          <OptionalImage
+            src="/images/hero.jpg"
+            alt="既読の先に、君がいた メインビジュアル"
+            fill
+            objectFit="cover"
+            priority
+            sizes="(max-width: 640px) 100vw, 512px"
+            fallback={<HeroPlaceholder />}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(12,14,34,0.02) 0%, rgba(12,14,34,0.45) 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
 
-        {/* Genre label */}
         <p
           className="tracking-[0.38em] mb-8"
           style={{ color: 'rgba(165,160,220,0.5)', fontSize: '11px', fontFamily: 'sans-serif' }}
@@ -53,7 +109,6 @@ export default function Home() {
           BOYS LOVE CHAT NOVEL
         </p>
 
-        {/* Decorative rule */}
         <div className="flex items-center justify-center gap-4 mb-8">
           <div
             className="h-px flex-1"
@@ -74,7 +129,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Title */}
         <h1
           className="leading-tight mb-4"
           style={{
@@ -90,16 +144,14 @@ export default function Home() {
           君がいた
         </h1>
 
-        {/* Subtitle */}
         <p className="text-slate-300 mb-1.5" style={{ fontSize: '14px' }}>
           葬儀社と花屋、静かな恋の物語
         </p>
-        <p className="mb-10" style={{ color: 'rgba(148,163,184,0.5)', fontSize: '12px' }}>
+        <p className="mb-9" style={{ color: 'rgba(148,163,184,0.5)', fontSize: '12px' }}>
           社会人BL ·&nbsp;全年齢向け
         </p>
 
-        {/* Character cards */}
-        <div className="flex items-center justify-center gap-3 sm:gap-5 mb-10">
+        <div className="flex items-stretch justify-center gap-3 sm:gap-5 mb-10">
           <CharCard
             initial="優"
             name="瀬川 優"
@@ -108,10 +160,11 @@ export default function Home() {
             accentColor="#6ee7b7"
             glowColor="rgba(52,211,153,0.12)"
             borderColor="rgba(52,211,153,0.2)"
+            portraitSrc="/images/characters/tohru.png"
           />
 
           <span
-            className="pb-4 flex-shrink-0"
+            className="flex-shrink-0 self-center pb-6"
             style={{ color: 'rgba(100,116,139,0.5)', fontSize: '18px' }}
           >
             ×
@@ -125,10 +178,10 @@ export default function Home() {
             accentColor="#7dd3fc"
             glowColor="rgba(125,211,252,0.12)"
             borderColor="rgba(125,211,252,0.2)"
+            portraitSrc="/images/characters/ren.png"
           />
         </div>
 
-        {/* CTA Button */}
         <Link
           href="/episode/1"
           className="block w-full rounded-2xl text-center text-white transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
@@ -149,7 +202,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Vertical decorative lines */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-20 pointer-events-none"
         aria-hidden="true"
@@ -172,6 +224,7 @@ function CharCard({
   accentColor,
   glowColor,
   borderColor,
+  portraitSrc,
 }: {
   initial: string;
   name: string;
@@ -180,12 +233,14 @@ function CharCard({
   accentColor: string;
   glowColor: string;
   borderColor: string;
+  portraitSrc: string;
 }) {
   return (
     <div
-      className="flex-1 py-5 px-4 rounded-2xl text-center"
+      className="flex-1 overflow-hidden rounded-2xl text-center"
       style={{
         maxWidth: '155px',
+        minWidth: 0,
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.09)',
         backdropFilter: 'blur(16px)',
@@ -193,35 +248,45 @@ function CharCard({
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
-      {/* Avatar */}
       <div
-        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+        className="relative"
         style={{
-          background: glowColor,
-          border: `1px solid ${borderColor}`,
+          aspectRatio: '4 / 5',
+          minHeight: '110px',
+          borderBottom: `1px solid ${borderColor}`,
         }}
       >
-        <span
-          style={{
-            color: accentColor,
-            fontSize: '17px',
-            fontWeight: 500,
-          }}
-        >
-          {initial}
-        </span>
+        <OptionalImage
+          src={portraitSrc}
+          alt={`${name} 立ち絵`}
+          fill
+          objectFit="cover"
+          sizes="155px"
+          fallback={
+            <PortraitPlaceholder
+              initial={initial}
+              accentColor={accentColor}
+              glowColor={glowColor}
+            />
+          }
+        />
       </div>
 
-      {/* Name */}
-      <p className="text-slate-200 mb-1" style={{ fontSize: '13px', letterSpacing: '0.04em' }}>
-        {name}
-      </p>
-
-      {/* Age */}
-      <p style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px' }}>{age}</p>
-
-      {/* Role */}
-      <p style={{ color: 'rgba(148,163,184,0.45)', fontSize: '11px' }}>{role}</p>
+      <div className="px-3 py-4">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
+          style={{ background: glowColor, border: `1px solid ${borderColor}` }}
+        >
+          <span style={{ color: accentColor, fontSize: '16px', fontWeight: 500 }}>
+            {initial}
+          </span>
+        </div>
+        <p className="text-slate-200 mb-1" style={{ fontSize: '13px', letterSpacing: '0.04em' }}>
+          {name}
+        </p>
+        <p style={{ color: 'rgba(148,163,184,0.6)', fontSize: '11px' }}>{age}</p>
+        <p style={{ color: 'rgba(148,163,184,0.45)', fontSize: '11px' }}>{role}</p>
+      </div>
     </div>
   );
 }

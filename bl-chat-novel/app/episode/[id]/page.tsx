@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import ChatNovel from '../../components/ChatNovel';
 
 export default async function EpisodePage({
@@ -16,9 +17,9 @@ export default async function EpisodePage({
         <p style={{ color: '#7b778a', fontSize: '15px' }}>
           このエピソードはまだ公開されていません
         </p>
-        <a href="/" style={{ color: '#6b6b9b', fontSize: '13px', textDecoration: 'underline' }}>
+        <Link href="/" style={{ color: '#6b6b9b', fontSize: '13px', textDecoration: 'underline' }}>
           トップへ戻る
-        </a>
+        </Link>
       </div>
     );
   }

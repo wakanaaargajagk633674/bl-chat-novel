@@ -3,6 +3,8 @@ import type { Episode } from './types';
 export const episode1: Episode = {
   id: '1',
   title: '第1話：はじまりの花',
+  subtitle: 'はじまりの花',
+  coverImage: '/images/episodes/episode1-cover.jpg',
   firstSceneId: 'scene-intro',
   scenes: [
     {
